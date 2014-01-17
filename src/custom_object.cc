@@ -1,6 +1,7 @@
 // Copyright (c) 2014 GitHub, Inc. All rights reserved.
 
 #include <string>
+#include <vector>
 
 #include "object_helper.h"
 
@@ -68,6 +69,15 @@ NAN_SETTER(CustomAccessorSetter) {
   NanReturnValue(return_value);
 }
 
+NAN_METHOD(CustomFunctionCallback) {
+  NanScope();
+  Handle<Function> constructor = Handle<Function>::Cast(args.Data());
+  std::vector<Handle<Value> > argv(args.Length());
+  for (size_t i = 0; i < argv.size(); ++i)
+    argv[i] = args[i];
+  NanReturnValue(constructor->Call(args.This(), argv.size(), argv.data()));
+}
+
 bool SetObjectTemplate(Handle<ObjectTemplate> object_template,
                        Handle<Object> options,
                        std::string* error) {
@@ -125,7 +135,20 @@ NAN_METHOD(CreateConstructor) {
   if (!args[0]->IsFunction() || !args[1]->IsObject())
     return NanThrowTypeError("Bad argument");
 
-  NanReturnNull();
+  Handle<Function> constructor = Handle<Function>::Cast(args[0]);
+  Handle<Object> options = args[1]->ToObject();
+
+  Handle<FunctionTemplate> function_template = FunctionTemplate::New(
+      CustomFunctionCallback, constructor);
+  Handle<Value> function_name = constructor->GetName();
+  function_template->SetClassName(function_name->ToString());
+
+  std::string error;
+  if (!SetObjectTemplate(function_template->InstanceTemplate(),
+                         options, &error))
+    return NanThrowError(error.c_str());
+
+  NanReturnValue(function_template->GetFunction());
 }
 
 NAN_METHOD(CreateObject) {

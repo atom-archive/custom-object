@@ -1,7 +1,7 @@
 customObject = require '../lib/custom-object'
 
 describe 'custom-object', ->
-  describe '.createObject(options)', ->
+  describe '.createObject(handler)', ->
     it 'sets the accessor getter', ->
       date = new Date
       object = customObject.createObject
@@ -74,3 +74,33 @@ describe 'custom-object', ->
       copy = []
       copy.push value for value in object
       expect(object).toEqual(copy)
+
+  describe '.createConstructor(constructor, handler)', ->
+    it 'returns a function with the same name of constructor', ->
+      class TestConstructor
+      constructor = customObject.createConstructor TestConstructor, {}
+      expect(constructor.name).toBe(TestConstructor.name)
+
+    it 'calls the constructor when construting an object', ->
+      date = new Date
+      newConstructor = null
+      constructor = (arg) ->
+        expect(arg).toBe(date)
+        expect(@constructor).toBe(newConstructor)
+      newConstructor = customObject.createConstructor constructor, {}
+      object = new newConstructor(date)
+      expect(object.constructor).toBe(newConstructor)
+
+    it 'sets the accessor getter for object constructed', ->
+      date = new Date
+      constructor = ->
+      newConstructor = customObject.createConstructor constructor,
+        accessor:
+          name: 'prop'
+          getter: (property) ->
+            expect(property).toBe('prop')
+            date
+      object = new newConstructor
+      expect(object.prop).toBe(date)
+      object.prop = 2
+      expect(object.prop).toBe(date)
