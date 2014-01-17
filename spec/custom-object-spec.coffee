@@ -5,25 +5,41 @@ describe 'custom-object', ->
     it 'sets the accessor getter', ->
       date = new Date
       object = customObject.createObject
-        accessor:
+        accessor: [
           name: 'prop'
           getter: (property) ->
             expect(property).toBe('prop')
             date
+        ]
       expect(object.prop).toBe(date)
       object.prop = 2
       expect(object.prop).toBe(date)
 
     it 'sets the accessor setter', ->
       object = customObject.createObject
-        accessor:
+        accessor: [
           name: 'prop'
           getter: (property) ->
             @test
           setter: (property, value) ->
             @test = value + 1
+        ]
       object.prop = 1
       expect(object.prop).toBe(2)
+
+    it 'can set multiple accessors', ->
+      object = customObject.createObject
+        accessor: [
+          {
+            name: 'prop1'
+            getter: (property) -> 1
+          }, {
+            name: 'prop2'
+            getter: (property) -> 2
+          }
+        ]
+      expect(object.prop1).toBe(1)
+      expect(object.prop2).toBe(2)
 
     it 'sets the indexed property getter', ->
       date = new Date
@@ -62,12 +78,13 @@ describe 'custom-object', ->
             data[index] = value
           deleter: (index) ->
             delete data[index]
-        accessor:
+        accessor: [
           name: 'length'
           getter: ->
             data.length
           setter: (value) ->
             data.length = value
+        ]
       object[0] = 1
       object[1] = 2
       object[2] = 3
@@ -95,11 +112,12 @@ describe 'custom-object', ->
       date = new Date
       constructor = ->
       newConstructor = customObject.createConstructor constructor,
-        accessor:
+        accessor: [
           name: 'prop'
           getter: (property) ->
             expect(property).toBe('prop')
             date
+        ]
       object = new newConstructor
       expect(object.prop).toBe(date)
       object.prop = 2

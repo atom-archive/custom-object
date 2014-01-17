@@ -81,24 +81,28 @@ NAN_METHOD(CustomFunctionCallback) {
 bool SetObjectTemplate(Handle<ObjectTemplate> object_template,
                        Handle<Object> options,
                        std::string* error) {
-  // accessor: { name: String, getter: Function, setter: Function }
-  Handle<Object> accessor;
-  if (ObjectGet(options, "accessor", &accessor)) {
-    Handle<String> name;
-    if (!ObjectGet(accessor, "name", &name)) {
-      *error = "The 'name' is required when setting accessor";
-      return false;
-    }
-    if (!accessor->Has(NanSymbol("getter"))) {
-      *error = "The 'getter' is required when setting accessor";
-      return false;
-    }
-    // The "setter" is optional.
-    AccessorSetterCallback setter = NULL;
-    if (accessor->Has(NanSymbol("setter")))
-      setter = CustomAccessorSetter;
+  // accessor: [ { name: String, getter: Function, setter: Function } ]
+  Handle<Array> accessor_array;
+  if (ObjectGet(options, "accessor", &accessor_array)) {
+    for (uint32_t i = 0; i < accessor_array->Length(); ++i) {
+      Handle<Object> accessor = accessor_array->Get(i)->ToObject();
+      Handle<String> name;
+      if (!ObjectGet(accessor, "name", &name)) {
+        *error = "The 'name' is required when setting accessor";
+        return false;
+      }
+      if (!accessor->Has(NanSymbol("getter"))) {
+        *error = "The 'getter' is required when setting accessor";
+        return false;
+      }
+      // The "setter" is optional.
+      AccessorSetterCallback setter = NULL;
+      if (accessor->Has(NanSymbol("setter")))
+        setter = CustomAccessorSetter;
 
-    object_template->SetAccessor(name, CustomAccessorGetter, setter, accessor);
+      object_template->SetAccessor(
+          name, CustomAccessorGetter, setter, accessor);
+    }
   }
 
   // index: { getter: Function, setter: Function, query: Function,
@@ -135,14 +139,17 @@ NAN_METHOD(CreateConstructor) {
   if (!args[0]->IsFunction() || !args[1]->IsObject())
     return NanThrowTypeError("Bad argument");
 
+  // Extract args.
   Handle<Function> constructor = Handle<Function>::Cast(args[0]);
   Handle<Object> options = args[1]->ToObject();
 
+  // Create a new FunctionTemplate which will call passed callback.
   Handle<FunctionTemplate> function_template = FunctionTemplate::New(
       CustomFunctionCallback, constructor);
   Handle<Value> function_name = constructor->GetName();
   function_template->SetClassName(function_name->ToString());
 
+  // Modify the FunctionTemplate's InstanceTemplate.
   std::string error;
   if (!SetObjectTemplate(function_template->InstanceTemplate(),
                          options, &error))
@@ -157,6 +164,7 @@ NAN_METHOD(CreateObject) {
   if (!args[0]->IsObject())
     return NanThrowTypeError("Bad argument");
 
+  // Create a new ObjectTemplate based on the passed handler.
   Local<ObjectTemplate> object_template = ObjectTemplate::New();
   std::string error;
   if (!SetObjectTemplate(object_template, args[0]->ToObject(), &error))
