@@ -2,29 +2,66 @@
 
 #include <string>
 
-#include "arraysize.h"
 #include "object_helper.h"
 
 namespace {
 
-NAN_GETTER(CustomAccessorGetter) {
-  NanScope();
-  Handle<Function> getter;
-  if (!ObjectGet(args.Data()->ToObject(), "getter", &getter))
-    return NanThrowError("Cannot find getter");
+#define DEFINE_NONE_PARAMETER_FUNC(name) \
+  NanScope(); \
+  Handle<Function> func; \
+  if (!ObjectGet(args.Data()->ToObject(), name, &func)) \
+    return NanThrowError("Cannot find " name); \
+  Handle<Value> return_value = func->Call(args.This(), 0, NULL)
 
-  Handle<Value> argv[] = { property };
-  NanReturnValue(getter->Call(args.This(), arraysize(argv), argv));
+#define DEFINE_ONE_PARAMETER_FUNC(name, key) \
+  NanScope(); \
+  Handle<Function> func; \
+  if (!ObjectGet(args.Data()->ToObject(), name, &func)) \
+    return NanThrowError("Cannot find " name); \
+  Handle<Value> argv[] = { key }; \
+  Handle<Value> return_value = func->Call(args.This(), 1, argv)
+
+#define DEFINE_TWO_PARAMETERS_FUNC(name, key, value) \
+  NanScope(); \
+  Handle<Function> func; \
+  if (!ObjectGet(args.Data()->ToObject(), name, &func)) \
+    return NanThrowError("Cannot find " name); \
+  Handle<Value> argv[] = { key, value }; \
+  Handle<Value> return_value = func->Call(args.This(), 2, argv)
+
+NAN_INDEX_GETTER(CustomIndexGetter) {
+  DEFINE_ONE_PARAMETER_FUNC("getter", Integer::New(index));
+  NanReturnValue(return_value);
+}
+
+NAN_INDEX_SETTER(CustomIndexSetter) {
+  DEFINE_TWO_PARAMETERS_FUNC("setter", Integer::New(index), value);
+  NanReturnValue(return_value);
+}
+
+NAN_INDEX_QUERY(CustomIndexQuery) {
+  DEFINE_ONE_PARAMETER_FUNC("query", Integer::New(index));
+  NanReturnValue(return_value->ToInteger());
+}
+
+NAN_INDEX_DELETER(CustomIndexDeleter) {
+  DEFINE_ONE_PARAMETER_FUNC("deleter", Integer::New(index));
+  NanReturnValue(return_value->ToBoolean());
+}
+
+NAN_INDEX_ENUMERATOR(CustomIndexEnumerator) {
+  DEFINE_NONE_PARAMETER_FUNC("enumerator");
+  NanReturnValue(Handle<Array>::Cast(return_value));
+}
+
+NAN_GETTER(CustomAccessorGetter) {
+  DEFINE_ONE_PARAMETER_FUNC("getter", property);
+  NanReturnValue(return_value);
 }
 
 NAN_SETTER(CustomAccessorSetter) {
-  NanScope();
-  Handle<Function> setter;
-  if (!ObjectGet(args.Data()->ToObject(), "setter", &setter))
-    return NanThrowError("Cannot find setter");
-
-  Handle<Value> argv[] = { property, value };
-  NanReturnValue(setter->Call(args.This(), arraysize(argv), argv));
+  DEFINE_TWO_PARAMETERS_FUNC("setter", property, value);
+  NanReturnValue(return_value);
 }
 
 bool SetObjectTemplate(Handle<ObjectTemplate> object_template,
@@ -48,6 +85,31 @@ bool SetObjectTemplate(Handle<ObjectTemplate> object_template,
       setter = CustomAccessorSetter;
 
     object_template->SetAccessor(name, CustomAccessorGetter, setter, accessor);
+  }
+
+  // index: { getter: Function, setter: Function, query: Function,
+  //          deleter: Function, enumerator: Function }
+  Handle<Object> index;
+  if (ObjectGet(options, "index", &index)) {
+    if (!index->Has(NanSymbol("getter"))) {
+      *error = "The 'getter' is required when setting index";
+      return false;
+    }
+    IndexedPropertySetterCallback setter = NULL;
+    if (index->Has(NanSymbol("setter")))
+      setter = CustomIndexSetter;
+    IndexedPropertyQueryCallback query = NULL;
+    if (index->Has(NanSymbol("query")))
+      query = CustomIndexQuery;
+    IndexedPropertyDeleterCallback deleter = NULL;
+    if (index->Has(NanSymbol("deleter")))
+      deleter = CustomIndexDeleter;
+    IndexedPropertyEnumeratorCallback enumerator = NULL;
+    if (index->Has(NanSymbol("enumerator")))
+      enumerator = CustomIndexEnumerator;
+
+    object_template->SetIndexedPropertyHandler(
+        CustomIndexGetter, setter, query, deleter, enumerator, index);
   }
 
   return true;

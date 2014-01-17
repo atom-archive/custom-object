@@ -24,3 +24,13 @@ describe 'custom-object', ->
             @test = value + 1
       object.prop = 1
       expect(object.prop).toBe(2)
+
+    it 'sets the indexed property getter', ->
+      date = new Date
+      object = customObject.createObject
+        index:
+          getter: (index) ->
+            expect(index).toBe(0)
+            date
+      object[0] = 1
+      expect(object[0]).toBe(date)
