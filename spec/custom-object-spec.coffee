@@ -46,8 +46,31 @@ describe 'custom-object', ->
           deleter: (index, data) ->
             delete data[index]
           enumerator: (data) ->
-            data
+            (i for k,i in data)
       object[0] = 1
       object[1] = 2
       object[2] = 3
       expect(object).toEqual([2, 3, 4])
+
+    it 'generates an iteratable array when length is set', ->
+      data = new Array
+      object = customObject.createObject
+        index:
+          getter: (index) ->
+            data[index]
+          setter: (index, value) ->
+            data[index] = value
+          deleter: (index) ->
+            delete data[index]
+        accessor:
+          name: 'length'
+          getter: ->
+            data.length
+          setter: (value) ->
+            data.length = value
+      object[0] = 1
+      object[1] = 2
+      object[2] = 3
+      copy = []
+      copy.push value for value in object
+      expect(object).toEqual(copy)
