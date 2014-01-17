@@ -34,3 +34,20 @@ describe 'custom-object', ->
             date
       object[0] = 1
       expect(object[0]).toBe(date)
+
+    it 'sets the indexed property enumerator', ->
+      object = customObject.createObject
+        index:
+          data: new Array
+          getter: (index, data) ->
+            data[index]
+          setter: (index, value, data) ->
+            data[index] = value + 1
+          deleter: (index, data) ->
+            delete data[index]
+          enumerator: (data) ->
+            data
+      object[0] = 1
+      object[1] = 2
+      object[2] = 3
+      expect(object).toEqual([2, 3, 4])

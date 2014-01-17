@@ -9,25 +9,29 @@ namespace {
 #define DEFINE_NONE_PARAMETER_FUNC(name) \
   NanScope(); \
   Handle<Function> func; \
-  if (!ObjectGet(args.Data()->ToObject(), name, &func)) \
+  Handle<Object> data = args.Data()->ToObject(); \
+  if (!ObjectGet(data, name, &func)) \
     return NanThrowError("Cannot find " name); \
-  Handle<Value> return_value = func->Call(args.This(), 0, NULL)
+  Handle<Value> argv[] = { data->Get(NanSymbol("data")) }; \
+  Handle<Value> return_value = func->Call(args.This(), 1, argv)
 
 #define DEFINE_ONE_PARAMETER_FUNC(name, key) \
   NanScope(); \
   Handle<Function> func; \
+  Handle<Object> data = args.Data()->ToObject(); \
   if (!ObjectGet(args.Data()->ToObject(), name, &func)) \
     return NanThrowError("Cannot find " name); \
-  Handle<Value> argv[] = { key }; \
-  Handle<Value> return_value = func->Call(args.This(), 1, argv)
+  Handle<Value> argv[] = { key, data->Get(NanSymbol("data")) }; \
+  Handle<Value> return_value = func->Call(args.This(), 2, argv)
 
 #define DEFINE_TWO_PARAMETERS_FUNC(name, key, value) \
   NanScope(); \
   Handle<Function> func; \
+  Handle<Object> data = args.Data()->ToObject(); \
   if (!ObjectGet(args.Data()->ToObject(), name, &func)) \
     return NanThrowError("Cannot find " name); \
-  Handle<Value> argv[] = { key, value }; \
-  Handle<Value> return_value = func->Call(args.This(), 2, argv)
+  Handle<Value> argv[] = { key, value, data->Get(NanSymbol("data")) }; \
+  Handle<Value> return_value = func->Call(args.This(), 3, argv)
 
 NAN_INDEX_GETTER(CustomIndexGetter) {
   DEFINE_ONE_PARAMETER_FUNC("getter", Integer::New(index));
