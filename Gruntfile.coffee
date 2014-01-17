@@ -22,6 +22,10 @@ module.exports = (grunt) ->
       files: ['src/**/*.cc']
       reporter: 'spec'
       verbosity: 1
+      filters:
+        build:
+          include: false
+          namespaces: false
 
     shell:
       rebuild:
