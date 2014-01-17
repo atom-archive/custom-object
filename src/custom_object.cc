@@ -7,6 +7,14 @@
 
 namespace {
 
+#if !NODE_VERSION_AT_LEAST(0, 11, 0)
+#define AccessorSetterCallback AccessorSetter
+#define IndexedPropertySetterCallback IndexedPropertySetter
+#define IndexedPropertyQueryCallback IndexedPropertyQuery
+#define IndexedPropertyDeleterCallback IndexedPropertyDeleter
+#define IndexedPropertyEnumeratorCallback IndexedPropertyEnumerator
+#endif
+
 #define DEFINE_NONE_PARAMETER_FUNC(name) \
   NanScope(); \
   Handle<Function> func; \
