@@ -6,15 +6,15 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/atom/node-custom-object/raw/master/LICENSE.md"
+      "url": "http://github.com/atom/custom-object/raw/master/LICENSE.md"
     }
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/atom/node-custom-object.git"
+    "url": "https://github.com/atom/custom-object.git"
   },
   "bugs": {
-    "url": "https://github.com/atom/node-custom-object/issues"
+    "url": "https://github.com/atom/custom-object/issues"
   },
   "scripts": {
     "prepublish": "grunt clean coffee lint",
